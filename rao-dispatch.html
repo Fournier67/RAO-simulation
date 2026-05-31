@@ -291,6 +291,17 @@
   }
   #guide-drawer.open { display:flex; }
   #guide-drawer.pinned { top:80px; }
+  #guide-reopen-tab {
+    display:none; position:fixed; right:0; top:50%; transform:translateY(-50%);
+    z-index:7400;
+    background:rgba(56,139,253,.15); border:1px solid rgba(56,139,253,.5); border-right:none;
+    color:var(--blue); font-family:var(--font); font-size:9px; font-weight:700;
+    padding:14px 5px; cursor:pointer; letter-spacing:1.5px;
+    writing-mode:vertical-rl; text-orientation:mixed;
+    border-radius:4px 0 0 4px;
+    transition:background .15s;
+  }
+  #guide-reopen-tab:hover { background:rgba(56,139,253,.32); border-color:var(--blue); }
   #guide-drawer-hdr {
     display:flex; align-items:center; justify-content:space-between;
     padding:8px 12px; background:#010409;
@@ -1330,6 +1341,9 @@
   <div id="guide-drawer-nature"></div>
   <div id="cf-questions-grid"></div>
 </div>
+
+<!-- ── ONGLET ROUVRIR GUIDE ── -->
+<button id="guide-reopen-tab" onclick="openGuideDrawer()" title="Ouvrir le guide questions">📋 GUIDE</button>
 
 <!-- ── MODAL HISTORIQUE DE NOM ── -->
 <div id="nhist-modal" onclick="if(event.target===this) closeNhistModal()">
@@ -4302,12 +4316,18 @@ function renderNatureQuestions(card, typeKey, code) {
 function openGuideDrawer() {
   const d = document.getElementById('guide-drawer');
   if (d) d.classList.add('open');
+  const tab = document.getElementById('guide-reopen-tab');
+  if (tab) tab.style.display = 'none';
 }
 
 function closeGuideDrawer() {
   const d = document.getElementById('guide-drawer');
   if (d) d.classList.remove('open');
   _guidePinned = false;
+  // Montrer l'onglet de réouverture seulement si des questions sont chargées
+  const grid = document.getElementById('cf-questions-grid');
+  const tab  = document.getElementById('guide-reopen-tab');
+  if (tab) tab.style.display = (grid && grid.children.length > 0) ? 'block' : 'none';
 }
 
 function toggleGuidePanel() {
@@ -4336,6 +4356,8 @@ function clearQuestionsPanel() {
   if (grid) grid.innerHTML = '';
   const btn  = document.getElementById('guide-toggle-btn');
   if (btn)  btn.style.display = 'none';
+  const tab  = document.getElementById('guide-reopen-tab');
+  if (tab)  tab.style.display = 'none';
   if (!_guidePinned) closeGuideDrawer();
 }
 
