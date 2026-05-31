@@ -2140,6 +2140,7 @@
         <span class="ph-icon">📟</span>
         <span class="ph-title">Cartes d'appels actives</span>
         <span class="ph-badge" id="cards-count">8 CARTES</span>
+        <span style="font-size:9px;color:var(--muted);margin-left:8px;letter-spacing:.5px">Double-clic → Écran Dispatch</span>
       </div>
       <div class="panel-body">
         <table class="cards-table" id="cards-table">
@@ -2536,6 +2537,12 @@ function switchScreen(n) {
   }
 }
 
+// Ouvrir une carte depuis l'écran Gestion → bascule sur Dispatch
+function openCardOnScreen2(cardId) {
+  loadCard(cardId);
+  switchScreen(2);
+}
+
 // Raccourcis clavier : touches 1 / 2 / 3 hors champ de saisie
 document.addEventListener('keydown', function(e) {
   const tag = (e.target.tagName || '').toLowerCase();
@@ -2853,7 +2860,11 @@ function renderCardsTable(){
   const priColors = {0:'#ff2d6b',1:'#f85149',2:'#fb8f44',3:'#d29922',4:'#3fb950',5:'#2da44e',6:'#1a7f37',7:'#388bfd',8:'#8b949e'};
 
   document.getElementById('cards-tbody').innerHTML = sorted.map(c => `
-    <tr onclick="loadCard('${c.id}')" class="${c.id===selectedCardId?'selected':''}">
+    <tr onclick="loadCard('${c.id}')"
+        ondblclick="openCardOnScreen2('${c.id}')"
+        title="Double-clic — ouvrir sur l'écran Dispatch"
+        style="cursor:pointer"
+        class="${c.id===selectedCardId?'selected':''}">
       <td><div class="pri-bar" style="background:${priColors[c.pri]}"></div></td>
       <td style="font-weight:700;color:#58a6ff;font-size:11px">${c.id}</td>
       <td>${c.type}</td>
