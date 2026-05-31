@@ -3000,15 +3000,81 @@ const VEH_STATUS_LABELS = {
   horsservice:'HORS SERVICE'
 };
 
+// ── PROPAGATION STATUT VÉHICULE → CARTE ───────────────────────────────
+
+// Rang d'avancement des statuts de carte (ne peut qu'avancer)
+const CARD_STATUS_RANK = { attente:0, traitement:1, dispatche:2, scene:3, ferme:99 };
+
+// Statuts véhicule qui mettent à jour la carte
+const VEH_TO_CARD_STATUS = { dispatche:'dispatche', enroute:'dispatche', scene:'scene' };
+
+function _syncCardFromVehicles(card) {
+  if (!card || card.statusKey === 'ferme') return false;
+
+  // Rassembler les statuts de carte équivalents pour tous les véhicules assignés
+  const chipIds = (card.assignedUnits || []).map(chip => chip.trim().split(/\s+/).pop());
+  let bestRank  = CARD_STATUS_RANK[card.statusKey] ?? 1;
+  let bestKey   = null;
+
+  chipIds.forEach(id => {
+    const veh = VEHICLES.find(v => v.id === id);
+    if (!veh) return;
+    const mapped = VEH_TO_CARD_STATUS[veh.statusKey];
+    if (!mapped) return;
+    const rank = CARD_STATUS_RANK[mapped] ?? 0;
+    if (rank > bestRank) { bestRank = rank; bestKey = mapped; }
+  });
+
+  if (!bestKey) return false; // aucun avancement possible
+
+  card.statusKey = bestKey;
+  card.status    = STATUS_LABEL[bestKey] || bestKey.toUpperCase();
+
+  // Horodatage répartition si première fois
+  if (bestKey === 'dispatche' && !card.dispatched) {
+    const now = new Date();
+    card.dispatched = now.toLocaleTimeString('fr-CA',
+      { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  }
+  return true;
+}
+
+function _propagateVehToCards(vehId) {
+  let anyChanged = false;
+  CARDS.forEach(card => {
+    if (card.statusKey === 'ferme') return;
+    const assigned = (card.assignedUnits || []).some(chip => chip.trim().split(/\s+/).pop() === vehId);
+    if (!assigned) return;
+    if (_syncCardFromVehicles(card)) {
+      anyChanged = true;
+      // Rafraîchir la carte affichée à l'écran 2 si c'est elle
+      if (card.id === selectedCardId) {
+        const sb = document.getElementById('cf-status');
+        const bb = document.getElementById('card-status-badge');
+        if (sb) { sb.textContent = STATUS_LABEL[card.statusKey]; sb.className = `status-badge s-${card.statusKey}`; }
+        if (bb) bb.textContent = STATUS_LABEL[card.statusKey];
+      }
+    }
+  });
+  return anyChanged;
+}
+
 function updateVehStatus(vehId, statusKey) {
   const veh = VEHICLES.find(v => v.id === vehId);
   if (!veh) return;
   veh.statusKey = statusKey;
   veh.status    = VEH_STATUS_LABELS[statusKey] || statusKey.toUpperCase();
+
+  const cardChanged = _propagateVehToCards(vehId);
+
   renderVehiclesTable();
   renderCardsTable();
   saveToStorage();
-  showToast(`${vehId} → ${VEH_STATUS_LABELS[statusKey] || statusKey}`);
+
+  const label = VEH_STATUS_LABELS[statusKey] || statusKey;
+  showToast(cardChanged
+    ? `${vehId} → ${label} · statut carte mis à jour`
+    : `${vehId} → ${label}`);
 }
 
 // ── SECTION HORS SERVICE ───────────────────────────────────────────────
@@ -3055,6 +3121,7 @@ function reactivateVehicle(vehId, statusKey) {
   if (!veh) return;
   veh.statusKey = statusKey;
   veh.status    = VEH_STATUS_LABELS[statusKey] || statusKey.toUpperCase();
+  _propagateVehToCards(vehId);
   renderVehiclesTable();
   renderCardsTable();
   saveToStorage();
