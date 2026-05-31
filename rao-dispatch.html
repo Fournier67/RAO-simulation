@@ -501,10 +501,31 @@
     overflow: hidden;
   }
 
+  /* ── 3 ÉCRANS SIMULÉS ── */
+  .screen { display: none; flex: 1; overflow: hidden; }
+  .screen.active { display: flex; }
+  #screen-1 { flex-direction: column; align-items: center; justify-content: center; background: var(--bg); }
+  #screen-2 { flex-direction: row; }
+  #screen-3 { flex-direction: column; }
+
+  /* Switcher d'écran dans le header */
+  .screen-switcher { display: flex; gap: 3px; align-items: center; }
+  .screen-btn {
+    background: rgba(255,255,255,.04); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font); font-size: 10px; font-weight: 700;
+    padding: 5px 14px; cursor: pointer; letter-spacing: .5px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .screen-btn:hover { background: rgba(56,139,253,.12); color: var(--text); border-color: rgba(56,139,253,.4); }
+  .screen-btn.active { background: rgba(56,139,253,.18); border-color: var(--blue); color: var(--blue); }
+  .screen-btn .scr-num { font-size: 9px; color: var(--muted); margin-right: 4px; }
+  .screen-btn.active .scr-num { color: var(--blue); }
+
   /* ── PANELS ── */
   .panel { display: flex; flex-direction: column; overflow: hidden; }
-  #panel-left  { width: 52%; border-right: 2px solid var(--border); }
-  #panel-right { width: 48%; }
+  #panel-left  { width: 56%; border-right: 2px solid var(--border); flex-shrink: 0; }
+  #panel-map   { flex: 1; }
+  #panel-right { flex: 1; }
 
   .panel-half { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-half + .panel-half { border-top: 2px solid var(--border); }
@@ -1240,6 +1261,20 @@
       <div class="logo-sub">CENTRE DE COMMUNICATION SANTÉ · SÉCURITÉ PUBLIQUE</div>
     </div>
   </div>
+
+  <!-- ── SÉLECTEUR D'ÉCRAN ── -->
+  <div class="screen-switcher">
+    <button class="screen-btn" id="scr-btn-1" onclick="switchScreen(1)" title="Écran 1 — Téléphonie [Touche 1]">
+      <span class="scr-num">①</span>📞 TÉLÉPHONIE
+    </button>
+    <button class="screen-btn active" id="scr-btn-2" onclick="switchScreen(2)" title="Écran 2 — Dispatch [Touche 2]">
+      <span class="scr-num">②</span>📋 DISPATCH
+    </button>
+    <button class="screen-btn" id="scr-btn-3" onclick="switchScreen(3)" title="Écran 3 — Gestion [Touche 3]">
+      <span class="scr-num">③</span>📟 GESTION
+    </button>
+  </div>
+
   <div class="hcenter">
     <div class="badge-sys">● SYSTÈME ACTIF</div>
     <button id="theme-toggle" onclick="toggleTheme()" title="Mode jour / nuit">🌙</button>
@@ -1461,7 +1496,19 @@
 <!-- ── MAIN ── -->
 <div id="main">
 
-  <!-- ═══════════════ PANEL LEFT ═══════════════ -->
+  <!-- ═══════════════ ÉCRAN 1 — TÉLÉPHONIE ═══════════════ -->
+  <div class="screen" id="screen-1">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:.45;pointer-events:none">
+      <div style="font-size:72px">📞</div>
+      <div style="font-size:26px;font-weight:700;letter-spacing:4px;color:var(--blue)">TÉLÉPHONIE</div>
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase">Module en développement — disponible prochainement</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ÉCRAN 2 — DISPATCH ═══════════════ -->
+  <div class="screen active" id="screen-2">
+
+  <!-- ═══════════════ PANEL LEFT (carte d'appel) ═══════════════ -->
   <div class="panel" id="panel-left">
 
     <!-- HALF 1 : Carte d'appel -->
@@ -1897,53 +1944,59 @@
       </div><!-- /panel-body -->
     </div><!-- /half1 -->
 
-    <!-- HALF 2 : Cartographie -->
-    <div class="panel-half">
-      <div class="panel-header">
-        <span class="ph-icon">🗺</span>
-        <span class="ph-title">Cartographie — Localisation incident</span>
-        <span class="ph-badge" id="map-coords">45.5204° N, 73.5563° O</span>
-      </div>
-      <div class="panel-body" style="padding:0">
-        <div id="map-container">
-          <!-- Leaflet real map -->
-          <div id="leaflet-map"></div>
-
-          <!-- compass -->
-          <div class="compass">
-            <span class="cn">N</span>
-            <span class="cs">S</span>
-            <span class="ce">E</span>
-            <span class="cw">O</span>
-            🧭
-          </div>
-
-          <!-- map info bar -->
-          <div class="map-info" id="map-info-text">📍 —</div>
-
-          <!-- controls -->
-          <div class="map-controls">
-            <button class="map-btn" onclick="raoMapZoomIn()"  title="Zoom avant">+</button>
-            <button class="map-btn" onclick="raoMapZoomOut()" title="Zoom arrière">−</button>
-            <button class="map-btn" onclick="raoMapCenter()"  title="Centrer sur incident">⊕</button>
-            <button class="map-btn" onclick="raoMapToggleLayer()" title="Changer le fond de carte" id="map-layer-btn">🛰</button>
-          </div>
-
-          <!-- legend -->
-          <div class="map-legend">
-            <div class="leg-title">Légende</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#f85149"></div> Incident actif</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#388bfd"></div> Camion pompier</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#3fb950"></div> Ambulance</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#8957e5"></div> Police</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#f85149;border-radius:2px"></div> Véhicule impliqué</div>
-          </div>
-        </div>
-      </div>
-    </div><!-- /half2 left -->
   </div><!-- /panel-left -->
 
-  <!-- ═══════════════ PANEL RIGHT ═══════════════ -->
+  <!-- ═══════════════ PANEL MAP (cartographie) ═══════════════ -->
+  <div class="panel" id="panel-map">
+    <div class="panel-header">
+      <span class="ph-icon">🗺</span>
+      <span class="ph-title">Cartographie — Localisation incident</span>
+      <span class="ph-badge" id="map-coords">45.5204° N, 73.5563° O</span>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div id="map-container">
+        <!-- Leaflet real map -->
+        <div id="leaflet-map"></div>
+
+        <!-- compass -->
+        <div class="compass">
+          <span class="cn">N</span>
+          <span class="cs">S</span>
+          <span class="ce">E</span>
+          <span class="cw">O</span>
+          🧭
+        </div>
+
+        <!-- map info bar -->
+        <div class="map-info" id="map-info-text">📍 —</div>
+
+        <!-- controls -->
+        <div class="map-controls">
+          <button class="map-btn" onclick="raoMapZoomIn()"  title="Zoom avant">+</button>
+          <button class="map-btn" onclick="raoMapZoomOut()" title="Zoom arrière">−</button>
+          <button class="map-btn" onclick="raoMapCenter()"  title="Centrer sur incident">⊕</button>
+          <button class="map-btn" onclick="raoMapToggleLayer()" title="Changer le fond de carte" id="map-layer-btn">🛰</button>
+        </div>
+
+        <!-- legend -->
+        <div class="map-legend">
+          <div class="leg-title">Légende</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f85149"></div> Incident actif</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#388bfd"></div> Camion pompier</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#3fb950"></div> Ambulance</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#8957e5"></div> Police</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f85149;border-radius:2px"></div> Véhicule impliqué</div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-map -->
+
+  </div><!-- /screen-2 -->
+
+  <!-- ═══════════════ ÉCRAN 3 — GESTION ═══════════════ -->
+  <div class="screen" id="screen-3">
+
+  <!-- ═══════════════ PANEL RIGHT (cartes + véhicules) ═══════════════ -->
   <div class="panel" id="panel-right">
 
     <!-- HALF 1 : Cartes actives -->
@@ -2016,6 +2069,8 @@
       </div>
     </div><!-- /half2 right -->
   </div><!-- /panel-right -->
+
+  </div><!-- /screen-3 -->
 </div><!-- /main -->
 
 <!-- ── MODAL DUPLICATION CARTE ── -->
@@ -2290,6 +2345,32 @@ const VEHICLES = [
 // ── STATE ─────────────────────────────────────────────────────────────
 let selectedCardId = 'CAD-2026-04231';
 let cardStartTime  = CARDS[0].startTime;
+let currentScreen  = 2;
+
+// ── NAVIGATION ÉCRANS ─────────────────────────────────────────────────
+function switchScreen(n) {
+  if (n === currentScreen) return;
+  currentScreen = n;
+  [1, 2, 3].forEach(i => {
+    const scr = document.getElementById(`screen-${i}`);
+    const btn = document.getElementById(`scr-btn-${i}`);
+    if (scr) scr.classList.toggle('active', i === n);
+    if (btn) btn.classList.toggle('active', i === n);
+  });
+  // Leaflet a besoin d'être notifié quand son conteneur devient visible
+  if (n === 2) {
+    setTimeout(() => { try { raoMap && raoMap.invalidateSize(); } catch(e){} }, 60);
+  }
+}
+
+// Raccourcis clavier : touches 1 / 2 / 3 hors champ de saisie
+document.addEventListener('keydown', function(e) {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === '1') switchScreen(1);
+  else if (e.key === '2') switchScreen(2);
+  else if (e.key === '3') switchScreen(3);
+});
 
 // ── CLOCK ─────────────────────────────────────────────────────────────
 function pad(n){ return String(n).padStart(2,'0'); }
