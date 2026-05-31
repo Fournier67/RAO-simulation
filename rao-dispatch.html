@@ -1111,6 +1111,19 @@
   .hs-empty { padding:12px 14px; font-size:11px; color:var(--muted); font-style:italic; }
   .veh-status-sel.vs-enservice { color:var(--p3); border-bottom-color:var(--p3); }
 
+  /* ── FILTRE CARTES (écran Gestion) ── */
+  .card-filter-btn {
+    padding:2px 9px; font-family:var(--font); font-size:9px; font-weight:700;
+    letter-spacing:.5px; cursor:pointer; white-space:nowrap;
+    background:var(--panel); border:1px solid var(--border); color:var(--muted);
+    transition:background .12s, border-color .12s, color .12s;
+  }
+  .card-filter-btn:hover                  { background:rgba(255,255,255,.05); color:var(--text); }
+  .card-filter-btn.active                 { background:rgba(56,139,253,.1);   border-color:var(--blue);  color:var(--text); }
+  .card-filter-btn.cfb-incendie.active    { background:rgba(248,81,73,.13);   border-color:var(--p1);    color:var(--p1);   }
+  .card-filter-btn.cfb-sante.active       { background:rgba(56,139,253,.15);  border-color:var(--blue);  color:var(--blue); }
+  .card-filter-btn.cfb-police.active      { background:rgba(139,148,158,.18); border-color:var(--muted); color:var(--text); }
+
   /* ── FILTRE SERVICES ── */
   .veh-filter-bar {
     display:flex; gap:5px; padding:7px 10px;
@@ -2140,6 +2153,12 @@
         <span class="ph-icon">📟</span>
         <span class="ph-title">Cartes d'appels actives</span>
         <span class="ph-badge" id="cards-count">8 CARTES</span>
+        <div style="display:flex;gap:4px;margin-left:10px">
+          <button class="card-filter-btn active"       id="cfb-tous"     onclick="setCardFilter('tous')">Tous</button>
+          <button class="card-filter-btn cfb-incendie" id="cfb-incendie" onclick="setCardFilter('INCENDIE')">🔥 Incendie</button>
+          <button class="card-filter-btn cfb-sante"    id="cfb-sante"    onclick="setCardFilter('MÉDICAL')">🚑 Santé</button>
+          <button class="card-filter-btn cfb-police"   id="cfb-police"   onclick="setCardFilter('POLICE')">🚔 Police</button>
+        </div>
         <span style="font-size:9px;color:var(--muted);margin-left:8px;letter-spacing:.5px">Double-clic → Écran Dispatch</span>
       </div>
       <div class="panel-body">
@@ -2839,7 +2858,20 @@ function loadCard(cardId){
 }
 
 // ── CARDS TABLE ────────────────────────────────────────────────────────
-let cardSort = { key: 'pri', asc: true };
+let cardSort       = { key: 'pri', asc: true };
+let cardTypeFilter = 'tous';
+
+function setCardFilter(type) {
+  cardTypeFilter = type;
+  const map = { 'tous':'cfb-tous', 'INCENDIE':'cfb-incendie', 'MÉDICAL':'cfb-sante', 'POLICE':'cfb-police' };
+  Object.values(map).forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.remove('active');
+  });
+  const active = document.getElementById(map[type]);
+  if (active) active.classList.add('active');
+  renderCardsTable();
+}
 
 function sortCards(key){
   if(cardSort.key === key) cardSort.asc = !cardSort.asc;
@@ -2849,8 +2881,11 @@ function sortCards(key){
 
 function renderCardsTable(){
   // N'afficher que les cartes actives (non fermées)
-  const active = CARDS.filter(c => c.statusKey !== 'ferme');
-  const sorted = [...active].sort((a,b)=>{
+  const active   = CARDS.filter(c => c.statusKey !== 'ferme');
+  const filtered = cardTypeFilter === 'tous'
+    ? active
+    : active.filter(c => c.typeKey === cardTypeFilter);
+  const sorted = [...filtered].sort((a,b)=>{
     let va = a[cardSort.key], vb = b[cardSort.key];
     if(cardSort.key==='id') { va=a.id; vb=b.id; }
     if(typeof va==='string') return cardSort.asc ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -2877,8 +2912,14 @@ function renderCardsTable(){
 
   const total    = CARDS.length;
   const disposed = total - active.length;
-  document.getElementById('cards-count').textContent =
-    disposed > 0 ? `${active.length} ACTIVES · ${disposed} DISPOSÉES` : `${active.length} CARTES`;
+  const countEl  = document.getElementById('cards-count');
+  if (cardTypeFilter !== 'tous') {
+    countEl.textContent = `${filtered.length} / ${active.length} CARTES`;
+  } else {
+    countEl.textContent = disposed > 0
+      ? `${active.length} ACTIVES · ${disposed} DISPOSÉES`
+      : `${active.length} CARTES`;
+  }
 }
 
 // ── VEHICLES TABLE ─────────────────────────────────────────────────────
