@@ -2550,8 +2550,18 @@ function switchScreen(n) {
     if (scr) scr.classList.toggle('active', i === n);
     if (btn) btn.classList.toggle('active', i === n);
   });
+
+  // Guide questions : visible seulement sur l'écran 2
+  const onScreen2 = (n === 2);
+  ['guide-drawer', 'guide-reopen-tab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.visibility  = onScreen2 ? '' : 'hidden';
+    el.style.pointerEvents = onScreen2 ? '' : 'none';
+  });
+
   // Leaflet a besoin d'être notifié quand son conteneur devient visible
-  if (n === 2) {
+  if (onScreen2) {
     setTimeout(() => { try { raoMap && raoMap.invalidateSize(); } catch(e){} }, 60);
   }
 }
