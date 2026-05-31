@@ -280,6 +280,67 @@
   [data-theme="day"] .note-entry-body    { color:var(--text); }
   [data-theme="day"] .note-add-wrap      { background:#f6f8fa; }
 
+  /* ── TIROIR GUIDE QUESTIONS ── */
+  #guide-drawer {
+    display:none; position:fixed; top:80px; right:0; z-index:7500;
+    width:340px; max-height:calc(100vh - 100px);
+    background:var(--panel); border:1px solid var(--border);
+    border-right:none; box-shadow:-6px 0 24px rgba(0,0,0,.5);
+    flex-direction:column; overflow:hidden;
+    transition:transform .2s ease;
+  }
+  #guide-drawer.open { display:flex; }
+  #guide-drawer.pinned { top:80px; }
+  #guide-drawer-hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px; background:#010409;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  #guide-drawer-title {
+    font-size:10px; font-weight:700; letter-spacing:1px;
+    color:var(--blue); text-transform:uppercase;
+  }
+  #guide-drawer-hdr button {
+    background:none; border:1px solid var(--border); color:var(--muted);
+    font-size:11px; padding:1px 6px; cursor:pointer; font-family:var(--font);
+  }
+  #guide-drawer-hdr button:hover { color:var(--text); border-color:var(--text); }
+  #guide-drawer-nature {
+    padding:5px 10px; font-size:10px; color:var(--muted);
+    background:rgba(56,139,253,.05); border-bottom:1px solid var(--border);
+    flex-shrink:0; font-style:italic;
+  }
+  #cf-questions-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    overflow-y:auto; flex:1;
+  }
+  .qcat { border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .qcat:nth-child(even) { border-right:none; }
+  .qcat:nth-last-child(-n+2) { border-bottom:none; }
+  .qcat-hdr {
+    padding:4px 8px; font-size:9px; letter-spacing:1.2px;
+    text-transform:uppercase; font-weight:700;
+    border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1;
+  }
+  .qcat-hdr-quoi    { color:#f85149; background:#0d1117; border-left:3px solid #f85149; }
+  .qcat-hdr-qui     { color:#d29922; background:#0d1117; border-left:3px solid #d29922; }
+  .qcat-hdr-ou      { color:#3fb950; background:#0d1117; border-left:3px solid #3fb950; }
+  .qcat-hdr-comment { color:#388bfd; background:#0d1117; border-left:3px solid #388bfd; }
+  .qrow {
+    display:flex; flex-direction:column; gap:2px;
+    padding:5px 8px; border-bottom:1px solid rgba(48,54,61,.45);
+  }
+  .qrow:last-child { border-bottom:none; }
+  .qrow-lbl { font-size:9px; color:var(--muted); line-height:1.4; }
+  .qrow-inp {
+    background:transparent; border:none;
+    border-bottom:1px solid rgba(48,54,61,.6);
+    color:var(--text); font-family:var(--font); font-size:11px;
+    padding:2px 0; outline:none; width:100%;
+  }
+  .qrow-inp:focus { border-bottom-color:var(--blue); }
+  .qrow-inp::placeholder { color:rgba(139,148,158,.35); font-size:10px; }
+
   /* ── MODAL HISTORIQUE DE NOM ── */
   #nhist-modal {
     display:none; position:fixed; inset:0; z-index:10000;
@@ -1257,6 +1318,19 @@
   </div>
 </div>
 
+<!-- ── TIROIR GUIDE QUESTIONS ── -->
+<div id="guide-drawer">
+  <div id="guide-drawer-hdr">
+    <span id="guide-drawer-title">📋 Guide questions</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="guide-drawer-pin" onclick="pinGuideDrawer()" title="Épingler">📌</button>
+      <button onclick="closeGuideDrawer()" title="Fermer">✕</button>
+    </div>
+  </div>
+  <div id="guide-drawer-nature"></div>
+  <div id="cf-questions-grid"></div>
+</div>
+
 <!-- ── MODAL HISTORIQUE DE NOM ── -->
 <div id="nhist-modal" onclick="if(event.target===this) closeNhistModal()">
   <div id="nhist-box">
@@ -1438,6 +1512,12 @@
             </div>
             <input type="hidden" id="cf-nature-select" value="">
             <div id="cf-nature-hint-card" style="font-size:10px;margin-top:3px;display:none;padding:3px 6px;border-left:2px solid"></div>
+            <button id="guide-toggle-btn" onclick="toggleGuidePanel()"
+              style="display:none;margin-top:5px;background:rgba(56,139,253,.12);border:1px solid rgba(56,139,253,.4);
+              color:var(--blue);font-family:var(--font);font-size:10px;padding:4px 10px;cursor:pointer;
+              letter-spacing:.5px;width:100%;text-align:left">
+              📋 Ouvrir le guide questions — Quoi · Qui · Où · Comment ›
+            </button>
           </div>
 
           <!-- address -->
@@ -2347,6 +2427,7 @@ function updateCfType() {
   populateCfPrioritySelect(typeKey, card.pri);
   buildCfNatureOptions(typeKey);
   clearNatureCombo('cf', true);
+  clearQuestionsPanel();
 
   renderCardsTable();
   showToast(`Type modifié → ${typeKey}`);
@@ -2383,6 +2464,9 @@ function applyCfNature() {
   hint.style.display       = '';
   hint.style.color         = color;
   hint.style.borderLeftColor = color;
+
+  // Panneau questions clés
+  renderNatureQuestions(card, type, code);
 
   renderCardsTable();
 }
@@ -2424,6 +2508,9 @@ function loadCard(cardId){
   document.getElementById('cf-nature-select').value = natCode || '';
   setNatureCombo('cf', natCode);
   document.getElementById('cf-nature-hint-card').style.display = 'none';
+  // Restaurer le panneau questions
+  if (natCode) renderNatureQuestions(card, card.typeKey, natCode);
+  else clearQuestionsPanel();
   document.getElementById('cf-subtype').textContent = card.subtype || '—';
   document.getElementById('cf-address').textContent = card.fullAddr;
   document.getElementById('cf-caller').textContent = card.caller;
@@ -2977,6 +3064,284 @@ const INCENDIE_GROUPS = [
   { label:'🟡 Prioritaire · P3 recommandé',     codes:['07'] }
 ];
 
+// ── QUESTIONS CLÉS PAR NATURE D'ÉVÉNEMENT ─────────────────────────────
+const NATURE_QUESTIONS = {
+  MÉDICAL: {
+    _default: {
+      quoi:    ['Quel est le problème principal?', 'Patient conscient et réactif?'],
+      qui:     ['Âge et sexe du patient?', 'Antécédents médicaux importants?'],
+      ou:      ['Accès au bâtiment (étage, code, sonnette)?', 'Porte déverrouillée pour les secours?'],
+      comment: ['Depuis combien de temps?', 'Respiration normale?']
+    },
+    '01': {
+      quoi:    ['Localisation de la douleur (quadrant)?', 'Nausées, vomissements ou diarrhée?'],
+      qui:     ['Âge et sexe? Grossesse possible?', 'Antécédents (ulcère, appendicite)?'],
+      ou:      ['Accès au bâtiment (étage, code)?', 'Patient debout ou allongé?'],
+      comment: ['Depuis combien de temps?', 'Douleur constante ou par crampes?']
+    },
+    '02': {
+      quoi:    ['Agent allergène (aliment, insecte, médicament)?', 'Gonflement gorge ou difficulté respiratoire?'],
+      qui:     ['Âge et sexe?', 'Épi-Pen disponible et déjà utilisé?'],
+      ou:      ['Lieu de l\'incident?', 'Patient assis ou allongé?'],
+      comment: ['Il y a combien de minutes?', 'Première réaction sévère ou récidive?']
+    },
+    '06': {
+      quoi:    ['Type de douleur (pression, brûlure, élancement)?', 'Irradiation bras gauche, mâchoire ou dos?'],
+      qui:     ['Âge et sexe?', 'Antécédents cardiaques (IDM, angine, stent)?'],
+      ou:      ['Patient debout, assis ou allongé?', 'Accès au bâtiment?'],
+      comment: ['Survenu au repos ou à l\'effort?', 'Prise de nitroglycérine? Soulagement?']
+    },
+    '07': {
+      quoi:    ['Substance inhalée (fumée, CO, chimique)?', 'Symptômes (étourdissements, perte connaissance)?'],
+      qui:     ['Combien de personnes exposées?', 'Personnes encore dans le secteur contaminé?'],
+      ou:      ['Lieu ventilé ou confiné?', 'Source de contamination identifiée?'],
+      comment: ['Source toujours active?', 'Évacuation déjà en cours?']
+    },
+    '08': {
+      quoi:    ['Réaction à la voix ou à la douleur?', 'Traumatisme visible (chute, coup)?'],
+      qui:     ['Âge et sexe?', 'Antécédents (diabète, épilepsie, alcool)?'],
+      ou:      ['Patient au sol? Voies aériennes libres?', 'Accès secours?'],
+      comment: ['Depuis combien de temps?', 'Contexte (alcool, drogues, médicaments)?']
+    },
+    '09': {
+      quoi:    ['Patient ne respire pas ou respiration agonale?', 'Pouls absent vérifié?'],
+      qui:     ['Âge approximatif?', 'Quelqu\'un peut débuter la RCR immédiatement?'],
+      ou:      ['DEA disponible sur place?', 'Porte déverrouillée?'],
+      comment: ['Depuis combien de temps en arrêt?', 'RCR en cours? Combien de cycles?']
+    },
+    '10': {
+      quoi:    ['Difficultés respiratoires légères, modérées ou sévères?', 'Cyanose (lèvres bleues)?'],
+      qui:     ['Âge et sexe?', 'Antécédents (asthme, MPOC, insuffisance cardiaque)?'],
+      ou:      ['Patient assis ou allongé?', 'Accès secours?'],
+      comment: ['Médicaments (pompe) utilisés? Soulagement?', 'Fièvre associée?']
+    },
+    '11': {
+      quoi:    ['Crise tonico-clonique ou partielle?', 'Durée de la crise (en cours ou terminée)?'],
+      qui:     ['Âge? Épilepsie connue?', 'Prise d\'anticonvulsivants?'],
+      ou:      ['Risque de blessure secondaire?', 'Environnement sécurisé?'],
+      comment: ['Première crise ou récidive?', 'État de conscience après la crise?']
+    },
+    '12': {
+      quoi:    ['Symptômes: transpiration, tremblements, confusion?', 'Glycémie vérifiée?'],
+      qui:     ['Diabétique type 1 ou type 2?', 'Prise d\'insuline récente?'],
+      ou:      ['Patient peut-il déglutir (sucre oral possible)?', 'Accès secours?'],
+      comment: ['Depuis combien de temps?', 'Patient a-t-il mangé récemment?']
+    },
+    '17': {
+      quoi:    ['De quelle hauteur (lit, escalier, toit)?', 'Traumatisme visible (tête, colonne, membres)?'],
+      qui:     ['Âge? (personne âgée: fracture ++)', 'Perte de connaissance à l\'impact?'],
+      ou:      ['Patient peut bouger seul? Douleur cervicale?', 'Accès secours?'],
+      comment: ['Mécanisme (malaise, poussée, trébuchement)?', 'Anticoagulants (Coumadin, Xarelto)?']
+    },
+    '19': {
+      quoi:    ['Symptômes cardiaques associés (douleur thoracique)?', 'Pouls irrégulier ou très rapide?'],
+      qui:     ['Âge et sexe?', 'Antécédents arythmie ou fibrillation?'],
+      ou:      ['Patient debout ou assis?', 'Accès secours?'],
+      comment: ['Depuis combien de temps?', 'Antécédents de cardioversion?']
+    },
+    '23': {
+      quoi:    ['Substance ingérée ou injectée?', 'Quantité approximative et heure d\'ingestion?'],
+      qui:     ['Âge et sexe?', 'Intentionnel (tentative) ou accidentel?'],
+      ou:      ['Patient conscient? Voies aériennes libres?', 'Accès secours?'],
+      comment: ['Poison Control contacté (1-800-463-5060)?', 'Vomissements déjà survenus?']
+    },
+    '25': {
+      quoi:    ['Type de crise (agitation, menace, tentative)?', 'Moyen utilisé ou présent (médicaments, arme)?'],
+      qui:     ['Personne seule?', 'Antécédents psychiatriques?'],
+      ou:      ['Sécurité de l\'appelant sur place?', 'Police déjà informée?'],
+      comment: ['Personne en communication?', 'Risque immédiat pour elle ou autrui?']
+    },
+    '27': {
+      quoi:    ['Signes FAST (Face, Bras, Speech, Temps)?', 'Faiblesse soudaine d\'un côté du corps?'],
+      qui:     ['Âge? Antécédents AVC ou AIT?', 'Anticoagulants?'],
+      ou:      ['Patient debout? Risque de chute?', 'Accès secours?'],
+      comment: ['Heure exacte du début des symptômes?', 'Glycémie vérifiable?']
+    },
+    '31': {
+      quoi:    ['Perte connaissance complète ou partielle?', 'Récupération spontanée?'],
+      qui:     ['Âge? Antécédents cardiaques?', 'Contexte (chaleur, effort, émotion forte)?'],
+      ou:      ['Patient au sol ou assis?', 'Voies aériennes libres?'],
+      comment: ['Durée de la perte de connaissance?', 'Traumatisme à la chute?']
+    }
+  },
+
+  INCENDIE: {
+    _default: {
+      quoi:    ['Qu\'est-ce qui brûle exactement?', 'Ampleur (pièce / étage / bâtiment entier)?'],
+      qui:     ['Personnes encore à l\'intérieur?', 'Nombre évacués ou manquants?'],
+      ou:      ['Entrée principale accessible pour les pompiers?', 'Hydrant le plus proche?'],
+      comment: ['Comment le feu a débuté (si connu)?', 'Matières dangereuses ou bonbonnes sur place?']
+    },
+    '01': {
+      quoi:    ['Type de bâtiment (résidentiel, commercial, industriel)?', 'Flammes ou fumée visible à l\'extérieur?'],
+      qui:     ['Personnes confirmées à l\'intérieur? Étage?', 'Combien d\'occupants total?'],
+      ou:      ['Accès dégagé pour les pompiers?', 'Bâtiment adjacent menacé?'],
+      comment: ['Construction bois ou béton?', 'Propane, bonbonnes ou chimiques sur place?']
+    },
+    '02': {
+      quoi:    ['Type de véhicule (auto, camion, VÉ)?', 'Véhicule électrique? (risque batterie)'],
+      qui:     ['Conducteur et passagers évacués?', 'Blessés?'],
+      ou:      ['Sur voie publique ou stationnement?', 'Collision associée?'],
+      comment: ['Risque d\'explosion du réservoir?', 'Voie bloquée — signalement requis?']
+    },
+    '03': {
+      quoi:    ['Feu confiné à la cuisinière ou propagé?', 'Fumée dans tout le logement?'],
+      qui:     ['Occupants évacués?', 'Blessés (brûlures, inhalation)?'],
+      ou:      ['Appartement ou maison? Étage?', 'Alarme de l\'immeuble déclenchée?'],
+      comment: ['Extincteur utilisé? Résultat?', 'Cuisinière gaz ou électrique?']
+    },
+    '04': {
+      quoi:    ['Type d\'explosion (gaz, chimique, autre)?', 'Structure debout ou effondrée?'],
+      qui:     ['Victimes au sol ou manquantes?', 'Témoins sur place?'],
+      ou:      ['Périmètre de sécurité établi?', 'Source identifiée (conduite gaz, réservoir)?'],
+      comment: ['Risque de deuxième explosion?', 'Gaz ou produit toujours actif?']
+    },
+    '05': {
+      quoi:    ['Superficie estimée en feu?', 'Propagation vers des structures?'],
+      qui:     ['Résidences menacées? Combien?', 'Évacuation en cours?'],
+      ou:      ['Direction du vent?', 'Accès (chemin forestier)?'],
+      comment: ['Ligne électrique menacée?', 'Signalement SOPFEU requis?']
+    },
+    '06': {
+      quoi:    ['Matériau de toiture (asphalte, bois, métal)?', 'Flammes actives ou fumée seulement?'],
+      qui:     ['Occupants évacués?', 'Travailleurs sur le toit?'],
+      ou:      ['Unifamiliale ou multilogement?', 'Accès à la toiture?'],
+      comment: ['Travaux récents au chalumeau?', 'Feu visible de l\'intérieur (combles)?']
+    },
+    '07': {
+      quoi:    ['Odeur localisée ou dans tout le bâtiment?', 'Fumée visible?'],
+      qui:     ['Occupants avec symptômes (maux de tête, nausées)?', 'CO possible?'],
+      ou:      ['Origine suspectée (électrique, sous-sol, voisin)?', 'Détecteur CO activé?'],
+      comment: ['Portes et fenêtres ouvertes?', 'Résidentiel ou commercial?']
+    },
+    '08': {
+      quoi:    ['Flammes sortent de la cheminée?', 'Chaleur excessive dans le conduit?'],
+      qui:     ['Occupants dans la maison?', 'Quelqu\'un a tenté d\'éteindre?'],
+      ou:      ['Type de foyer (bois, gaz, pellets)?', 'Accès au toit?'],
+      comment: ['Dernier ramonage? Date?', 'Propagation aux poutres adjacentes?']
+    },
+    '09': {
+      quoi:    ['Odeur de soufre forte ou légère?', 'Source d\'ignition à proximité?'],
+      qui:     ['Occupants évacués?', 'Personnes indisposées?'],
+      ou:      ['Bâtiment fermé ou ventilé?', 'Robinet principal identifié?'],
+      comment: ['Ne pas allumer d\'interrupteur — évacuation immédiate?', 'Énergir contacté?']
+    },
+    '10': {
+      quoi:    ['Type d\'industrie ou produits stockés?', 'Matières dangereuses présentes?'],
+      qui:     ['Travailleurs sur place? Registre d\'employés?', 'Responsable de site joint?'],
+      ou:      ['Plan d\'évacuation disponible?', 'Bornes d\'eau industrielles?'],
+      comment: ['Gicleurs activés?', 'Intervention HAZMAT requise?']
+    },
+    '11': {
+      quoi:    ['Alarme sonore ou à distance (centrale)?', 'Fumée ou feu visible sur place?'],
+      qui:     ['Bâtiment évacué?', 'Responsable de l\'immeuble joint?'],
+      ou:      ['Type d\'immeuble (résidentiel, école, hôpital)?', 'Accès pompiers dégagé?'],
+      comment: ['Cause connue (cuisine, détecteur défectueux)?', 'Alarme répétitive à cette adresse?']
+    }
+  },
+
+  POLICE: {
+    _default: {
+      quoi:    ['Quel est l\'événement (en cours ou terminé)?', 'Y a-t-il des blessés?'],
+      qui:     ['Description du suspect (sexe, âge, habillement)?', 'Présence d\'arme (type)?'],
+      ou:      ['Lieu exact? Direction de fuite?', 'Suspect toujours sur place?'],
+      comment: ['Nombre de personnes impliquées?', 'Témoins identifiés?']
+    },
+    '01': {
+      quoi:    ['Nombre de véhicules impliqués?', 'Blessés et gravité estimée?'],
+      qui:     ['Conducteurs sur place? Fuite?', 'Piéton ou cycliste impliqué?'],
+      ou:      ['Voie bloquée? Sens de circulation?', 'Intersection ou autoroute?'],
+      comment: ['Déversement de liquide ou matières?', 'Airbags déployés? VÉ?']
+    },
+    '02': {
+      quoi:    ['Enfant ou adulte?', 'Enlèvement par inconnu ou personne connue?'],
+      qui:     ['Description de l\'agresseur?', 'Véhicule impliqué (marque, couleur, plaque)?'],
+      ou:      ['Dernière direction observée?', 'Lieu de l\'enlèvement?'],
+      comment: ['Depuis combien de temps?', 'Éléments de preuve sur place?']
+    },
+    '03': {
+      quoi:    ['Type d\'agression (coups, arme)?', 'Victime consciente et en sécurité?'],
+      qui:     ['Description de l\'agresseur?', 'Agresseur sur place ou en fuite?'],
+      ou:      ['Intérieur ou extérieur? Lieu public?', 'Direction de fuite?'],
+      comment: ['Arme encore présente?', 'Témoins? Caméras?']
+    },
+    '05': {
+      quoi:    ['Type d\'arme (feu, blanche, autre)?', 'Victime blessée — état?'],
+      qui:     ['Description du suspect?', 'Nombre de suspects?'],
+      ou:      ['Lieu exact? Intérieur ou extérieur?', 'Direction de fuite?'],
+      comment: ['Coups de feu entendus?', 'Scène sécurisée ou suspect actif?']
+    },
+    '06': {
+      quoi:    ['Événement en cours ou terminé?', 'Victime en sécurité actuellement?'],
+      qui:     ['Victime connue ou anonyme?', 'Agresseur connu de la victime?'],
+      ou:      ['Lieu de l\'agression?', 'Victime peut se déplacer?'],
+      comment: ['Préserver les preuves — ne pas se laver?', 'Soutien psychosocial requis?']
+    },
+    '07': {
+      quoi:    ['Type d\'alarme (panique, intrusion, commerciale)?', 'Contact visuel ou vocal sur place?'],
+      qui:     ['Responsable de l\'établissement joint?', 'Signes d\'intrusion?'],
+      ou:      ['Type d\'établissement (banque, résidence)?', 'Toutes entrées accessibles?'],
+      comment: ['Fausse alarme répétitive à cette adresse?', 'Caméras en service?']
+    },
+    '10': {
+      quoi:    ['Type de violence (physique, menace, séquestration)?', 'Arme impliquée?'],
+      qui:     ['Enfants présents sur les lieux?', 'Agresseur toujours dans la résidence?'],
+      ou:      ['Victime peut parler librement?', 'Lieu sûr disponible pour la victime?'],
+      comment: ['Historique de violence à cette adresse?', 'Ordonnance de protection en vigueur?']
+    },
+    '15': {
+      quoi:    ['Type de vol (avec violence, à l\'arraché, par ruse)?', 'Bien volé (description)?'],
+      qui:     ['Description du suspect?', 'Agresseur armé?'],
+      ou:      ['Lieu du vol? Direction de fuite?', 'Caméras à proximité?'],
+      comment: ['Événement terminé ou en cours?', 'Victime blessée?']
+    },
+    '19': {
+      quoi:    ['Intrusion en cours ou découverte après coup?', 'Porte ou fenêtre fracturée?'],
+      qui:     ['Suspect encore à l\'intérieur?', 'Résidents sur place?'],
+      ou:      ['Résidentiel ou commercial?', 'Point d\'entrée du suspect?'],
+      comment: ['Caméras disponibles?', 'Objets volés identifiés?']
+    },
+    '22': {
+      quoi:    ['Nature du danger (menace, arme, situation)?', 'Personne toujours en contact?'],
+      qui:     ['Qui est en danger?', 'Agresseur connu ou inconnu?'],
+      ou:      ['Localisation confirmée?', 'Accès des secours?'],
+      comment: ['Code de détresse utilisé?', 'Communication maintenue ou coupée?']
+    },
+    '29': {
+      quoi:    ['Personne perdue ou en détresse physique?', 'Blessures ou hypothermie?'],
+      qui:     ['Âge et description physique?', 'Vulnérabilité (démence, enfant)?'],
+      ou:      ['Dernière localisation connue?', 'Secteur de recherche délimité?'],
+      comment: ['Téléphone cellulaire actif?', 'Depuis combien de temps disparue?']
+    },
+    '30': {
+      quoi:    ['Type de crise (agitation, menace, dépression)?', 'Arme ou objet dangereux visible?'],
+      qui:     ['Personne seule ou entourée?', 'Antécédents psychiatriques connus?'],
+      ou:      ['Résidence, rue ou lieu public?', 'Sécurité des proches?'],
+      comment: ['Communication possible?', 'Équipe mobile santé mentale disponible?']
+    },
+    '33': {
+      quoi:    ['Nombre de personnes retenues?', 'Agresseur armé?'],
+      qui:     ['Relation agresseur/victime(s)?', 'Négociateur requis?'],
+      ou:      ['Type de bâtiment? Issues de secours?', 'Périmètre établi?'],
+      comment: ['Communication possible (tél., messagerie)?', 'Demandes formulées?']
+    },
+    '37': {
+      quoi:    ['Nombre d\'otages?', 'Agresseur armé et retranché?'],
+      qui:     ['Identité de l\'agresseur connue?', 'Otages blessés?'],
+      ou:      ['Structure et accès du bâtiment?', 'Zone d\'exclusion établie?'],
+      comment: ['Demandes formulées?', 'Équipe tactique et négociateur alertés?']
+    },
+    '41': {
+      quoi:    ['Type de menace (verbale, écrite, physique)?', 'Menace en cours ou passée?'],
+      qui:     ['Identité de l\'auteur des menaces?', 'Relation avec la victime?'],
+      ou:      ['Lieu de la menace?', 'Victime en sécurité?'],
+      comment: ['Menace enregistrée ou documentée?', 'Historique de menaces?']
+    }
+  }
+};
+// SÉCURITÉ utilise les mêmes questions que POLICE
+NATURE_QUESTIONS['SÉCURITÉ'] = NATURE_QUESTIONS.POLICE;
+
 function buildNatureOptions(natures, groups) {
   _natState.nc.natures   = natures;
   _natState.nc.groups    = groups;
@@ -3216,7 +3581,7 @@ function saveNewCard() {
       : 'Position non confirmée',
     startTime: ncStartTime, latLng: addrSelectedLatLng || null, unitPositions:[],
     vehiculesImpliques:[], personnesImpliquees: initPersonnes, ressourcesExternes:[],
-    nature: natureCode || null
+    nature: natureCode || null, questionsRep: {}
   };
 
   CARDS.unshift(newCard);
@@ -3870,6 +4235,108 @@ function openSearchModal() {
 
 function closeSearchModal() {
   document.getElementById('search-modal').classList.remove('open');
+}
+
+// ── QUESTIONS CLÉS QUOI / QUI / OÙ / COMMENT ─────────────────────────
+
+// ── TIROIR GUIDE QUESTIONS ────────────────────────────────────────────
+
+let _guidePinned = false;
+
+function renderNatureQuestions(card, typeKey, code) {
+  const svcKey = (typeKey === 'SÉCURITÉ') ? 'SÉCURITÉ' : typeKey;
+  const svc    = NATURE_QUESTIONS[svcKey];
+
+  // Bouton guide : afficher si le service a des questions
+  const btn = document.getElementById('guide-toggle-btn');
+  if (btn) btn.style.display = svc ? '' : 'none';
+
+  if (!svc) { closeGuideDrawer(); return; }
+
+  const qs = (code && svc[code]) ? svc[code] : svc._default;
+  if (!qs) { closeGuideDrawer(); return; }
+
+  if (!card.questionsRep) card.questionsRep = {};
+
+  // Mettre à jour le label nature dans le tiroir
+  const natLabel = document.getElementById('guide-drawer-nature');
+  const natName  = (_natState.cf.natures?.[code]?.desc) || '';
+  if (natLabel) natLabel.textContent = natName ? `${code} — ${natName}` : (typeKey + ' — questions générales');
+
+  const grid = document.getElementById('cf-questions-grid');
+  if (!grid) return;
+
+  const isDisposed = card.statusKey === 'ferme';
+  const cats = [
+    { key:'quoi',    label:'🔴 QUOI',    cls:'qcat-hdr-quoi'    },
+    { key:'qui',     label:'🟡 QUI',     cls:'qcat-hdr-qui'     },
+    { key:'ou',      label:'🟢 OÙ',      cls:'qcat-hdr-ou'      },
+    { key:'comment', label:'🔵 COMMENT', cls:'qcat-hdr-comment'  }
+  ];
+
+  grid.innerHTML = cats.map(cat => {
+    const questions = qs[cat.key] || [];
+    const rows = questions.map((q, i) => {
+      const rk        = `${cat.key}_${i}`;
+      const stored    = card.questionsRep[rk];
+      const answerVal = (stored && stored.q === q) ? (stored.a || '') : '';
+      const roAttr    = isDisposed ? 'readonly' : '';
+      return `<div class="qrow">
+        <span class="qrow-lbl">${escHtml(q)}</span>
+        <input class="qrow-inp" type="text"
+          placeholder="${isDisposed ? '—' : 'Réponse…'}"
+          value="${escHtml(answerVal)}" ${roAttr}
+          oninput="autoUpper(this)"
+          onblur="saveQAnswer('${rk}',this)">
+      </div>`;
+    }).join('');
+    return `<div class="qcat"><div class="qcat-hdr ${cat.cls}">${cat.label}</div>${rows}</div>`;
+  }).join('');
+
+  // Ouvrir automatiquement si pas encore épinglé/fermé
+  if (!document.getElementById('guide-drawer').classList.contains('open')) {
+    openGuideDrawer();
+  }
+}
+
+function openGuideDrawer() {
+  const d = document.getElementById('guide-drawer');
+  if (d) d.classList.add('open');
+}
+
+function closeGuideDrawer() {
+  const d = document.getElementById('guide-drawer');
+  if (d) d.classList.remove('open');
+  _guidePinned = false;
+}
+
+function toggleGuidePanel() {
+  const d = document.getElementById('guide-drawer');
+  if (d.classList.contains('open')) closeGuideDrawer();
+  else openGuideDrawer();
+}
+
+function pinGuideDrawer() {
+  _guidePinned = !_guidePinned;
+  const btn = document.getElementById('guide-drawer-pin');
+  if (btn) btn.style.color = _guidePinned ? 'var(--blue)' : '';
+}
+
+function saveQAnswer(rk, inp) {
+  const card = CARDS.find(c => c.id === selectedCardId);
+  if (!card || card.statusKey === 'ferme') return;
+  if (!card.questionsRep) card.questionsRep = {};
+  const lbl = inp.closest('.qrow')?.querySelector('.qrow-lbl')?.textContent || '';
+  card.questionsRep[rk] = { q: lbl, a: inp.value.trim().toUpperCase() };
+  saveToStorage();
+}
+
+function clearQuestionsPanel() {
+  const grid = document.getElementById('cf-questions-grid');
+  if (grid) grid.innerHTML = '';
+  const btn  = document.getElementById('guide-toggle-btn');
+  if (btn)  btn.style.display = 'none';
+  if (!_guidePinned) closeGuideDrawer();
 }
 
 // ── HISTORIQUE DE NOM ─────────────────────────────────────────────────
