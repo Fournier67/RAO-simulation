@@ -14,8 +14,8 @@
     --panel:    #161b22;
     --panel2:   #1c2128;
     --border:   #30363d;
-    --text:     #e6edf3;
-    --muted:    #8b949e;
+    --text:     #f0f6ff;   /* amélioré : plus lumineux pour meilleur contraste */
+    --muted:    #adb5bd;   /* amélioré : +contraste sur fonds sombres */
     --p1:       #f85149;
     --p2:       #fb8f44;
     --p3:       #d29922;
@@ -29,6 +29,32 @@
     --accent:   #1f6feb;
     --font:     'Courier New', 'Consolas', monospace;
   }
+
+  /* ── MODE CLAIR : redéfinition complète des variables ── */
+  :root[data-theme="day"] {
+    --bg:     #f6f8fa;
+    --panel:  #ffffff;
+    --panel2: #eef1f4;
+    --border: #c8d0d8;
+    --text:   #1c2128;
+    --muted:  #4b5563;
+    --p1:     #d1242f;
+    --p2:     #bf5208;
+    --p3:     #8a6300;
+    --p4:     #1a7f37;
+    --p5:     #0d6624;
+    --p6:     #044f1e;
+    --p7:     #0969da;
+    --p8:     #4b5563;
+    --blue:   #0969da;
+    --teal:   #1a7f37;
+    --accent: #0550ae;
+  }
+
+  /* En mode clair, le header et la menu-bar restent sombres :
+     on re-scope les variables pour que le texte reste lisible dedans */
+  [data-theme="day"] #header   { --blue: #79c0ff; --muted: #8b949e; --text: #f0f6ff; }
+  [data-theme="day"] #menu-bar { --muted: #adbac7; --text: #f0f6ff; }
 
   html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
 
@@ -92,9 +118,49 @@
   }
   [data-theme="day"] #menu-bar { background: #1a2840; }
   [data-theme="day"] .menu-dropdown { background: #fff; border-color: var(--border); }
-  [data-theme="day"] .menu-dd-item { color: var(--text); }
+  [data-theme="day"] .menu-dd-item { color: #1c2128; }
   [data-theme="day"] .menu-dd-item:hover { background: var(--accent); color: #fff; }
   [data-theme="day"] .menu-dd-sep { background: var(--border); }
+
+  /* Mode clair : fonds sombres figés → remplacés */
+  [data-theme="day"] .panel-header      { background: var(--panel2); }
+  [data-theme="day"] .panel-header .ph-title { color: var(--text); }
+  [data-theme="day"] .tab-bar           { background: var(--panel2); }
+  [data-theme="day"] .cards-table th    { background: var(--panel2); color: var(--text); }
+  [data-theme="day"] .veh-table th      { background: var(--panel2); color: var(--text); }
+  [data-theme="day"] #guide-drawer-hdr  { background: var(--panel2); }
+  [data-theme="day"] .rep-hdr           { background: var(--panel2); }
+  [data-theme="day"] .rep-hdr-title     { color: #1a7f37; }
+  [data-theme="day"] .tr-hdr            { background: var(--panel2); }
+  [data-theme="day"] .tr-hdr-title      { color: #0969da; }
+
+  /* Mode clair : couleurs figées "claires" → trop pâles sur fond blanc */
+  [data-theme="day"] .s-scene   { background:rgba(26,127,55,.12); color:#1a7f37; border-color:#1a7f37; }
+  [data-theme="day"] .vs-scene     { color: #1a7f37; }
+  [data-theme="day"] .vs-enroute   { color: #0969da; }
+  [data-theme="day"] .vs-redaction { color: #6e40c9; }
+  [data-theme="day"] .vs-enquete   { color: #7048a2; }
+  [data-theme="day"] .veh-status-sel.vs-scene     { color:#1a7f37; border-bottom-color:#1a7f37; }
+  [data-theme="day"] .veh-status-sel.vs-enroute   { color:#0969da; border-bottom-color:#0969da; }
+  [data-theme="day"] .veh-status-sel.vs-redaction { color:#6e40c9; border-bottom-color:#6e40c9; }
+  [data-theme="day"] .veh-status-sel.vs-enquete   { color:#7048a2; border-bottom-color:#7048a2; }
+
+  /* Mode clair : teal #2dd4bf → trop pâle sur fond blanc */
+  [data-theme="day"] .rb-appelant  { color:#0891b2; border-color:#0891b2; background:rgba(8,145,178,.1); }
+  [data-theme="day"] .nhist-hist-btn { color:#0891b2; border-color:rgba(8,145,178,.5); }
+  [data-theme="day"] #guide-reopen-tab { background:rgba(9,105,218,.12); border-color:rgba(9,105,218,.45); color:#0969da; }
+
+  /* Mode clair : en-têtes catégories questions (fond #0d1117 figé) */
+  [data-theme="day"] .qcat-hdr-quoi    { background:rgba(209,36,47,.08);   color:#d1242f; }
+  [data-theme="day"] .qcat-hdr-qui     { background:rgba(138,99,0,.08);    color:#8a6300; }
+  [data-theme="day"] .qcat-hdr-ou      { background:rgba(26,127,55,.08);   color:#1a7f37; }
+  [data-theme="day"] .qcat-hdr-comment { background:rgba(9,105,218,.08);   color:#0969da; }
+
+  /* Mode clair : tableaux — séparateurs */
+  [data-theme="day"] .cards-table td { border-bottom-color: rgba(200,208,216,.7); }
+  [data-theme="day"] .veh-table td   { border-bottom-color: rgba(200,208,216,.7); }
+  [data-theme="day"] .cards-table tr:hover td { background: rgba(9,105,218,.05); }
+  [data-theme="day"] .cards-table tr.selected td { background: rgba(9,105,218,.1); }
 
   /* ── SESSION INDICATOR ── */
   #session-indicator {
