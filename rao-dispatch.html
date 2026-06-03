@@ -1086,10 +1086,8 @@
   [data-theme="day"] .compass { color: #3a4f6a; }
   [data-theme="day"] .compass .cn { color: var(--p1); }
 
-  /* OSM day tiles: no filter — colours are already vivid */
+  /* La carte reste toujours en tuiles claires — aucun filtre */
   #leaflet-map { filter: none; }
-  /* Night: very subtle contrast boost on dark tiles */
-  [data-theme="night"] #leaflet-map { filter: brightness(0.95) contrast(1.05); }
 
   [data-theme="day"] .leaflet-popup-content-wrapper { background: #fff; color: #1a2232; border-color: #b0bac6; }
   [data-theme="day"] .leaflet-popup-tip { background: #fff; }
@@ -3745,8 +3743,8 @@ function initMap() {
     { attribution: '© Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom: 19 }
   );
 
-  const isDay = document.documentElement.getAttribute('data-theme') === 'day';
-  (isDay ? tileLayerDay : tileLayerDark).addTo(raoMap);
+  // La carte reste toujours en mode clair (tuiles OSM), quel que soit le thème UI
+  tileLayerDay.addTo(raoMap);
 
   // Force Leaflet to recalculate map size after flex layout settles
   setTimeout(() => raoMap.invalidateSize(), 100);
@@ -3828,20 +3826,12 @@ function raoMapToggleLayer() {
     tileLayerSat.addTo(raoMap);
   } else {
     raoMap.removeLayer(tileLayerSat);
-    const isDay = document.documentElement.getAttribute('data-theme') === 'day';
-    (isDay ? tileLayerDay : tileLayerDark).addTo(raoMap);
+    tileLayerDay.addTo(raoMap);   // toujours revenir aux tuiles claires
   }
 }
 
-function swapMapTileForTheme(isDay) {
-  if (!raoMap || usingSatellite) return;
-  if (isDay) {
-    raoMap.removeLayer(tileLayerDark);
-    tileLayerDay.addTo(raoMap);
-  } else {
-    raoMap.removeLayer(tileLayerDay);
-    tileLayerDark.addTo(raoMap);
-  }
+function swapMapTileForTheme(_isDay) {
+  // La carte reste toujours en tuiles claires — le thème UI n'a pas d'effet sur la carte
 }
 
 // ── THEME ──────────────────────────────────────────────────────────────
