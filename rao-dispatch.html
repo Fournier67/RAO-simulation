@@ -450,6 +450,60 @@
   }
   .nhist-hist-btn:hover { background:rgba(45,212,191,.15); }
 
+  /* ── MODAL LISTE DU PERSONNEL ── */
+  #personnel-modal {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.78); align-items:flex-start; justify-content:center; padding-top:60px;
+  }
+  #personnel-modal.open { display:flex; }
+  #personnel-box {
+    background:var(--panel); border:1px solid var(--border);
+    width:min(620px,96vw); max-height:80vh; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .pers-table { width:100%; border-collapse:collapse; }
+  .pers-table th {
+    background:var(--panel2); border-bottom:1px solid var(--border);
+    padding:6px 12px; text-align:left; font-size:9px;
+    letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; position:sticky; top:0;
+  }
+  .pers-table td { padding:7px 12px; border-bottom:1px solid rgba(48,54,61,.4); font-size:11px; }
+  .pers-table tr:hover td { background:rgba(56,139,253,.06); }
+  .pers-role-badge {
+    font-size:9px; padding:1px 6px; border:1px solid; letter-spacing:.5px; font-weight:700;
+  }
+
+  /* ── MODAL OUTIL RECHERCHE MULTI-ONGLETS ── */
+  #outils-search-modal {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.78); align-items:flex-start; justify-content:center; padding-top:50px;
+  }
+  #outils-search-modal.open { display:flex; }
+  #outils-search-box {
+    background:var(--panel); border:1px solid var(--border);
+    width:min(900px,96vw); max-height:82vh; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .os-tab-bar {
+    display:flex; border-bottom:2px solid var(--border); background:var(--panel2); flex-shrink:0;
+  }
+  .os-tab-btn {
+    background:none; border:none; border-bottom:2px solid transparent; margin-bottom:-2px;
+    color:var(--muted); font-family:var(--font); font-size:11px; font-weight:700;
+    padding:8px 18px; cursor:pointer; letter-spacing:.5px; transition:color .12s,border-color .12s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .os-tab-btn:hover { color:var(--text); }
+  .os-tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
+  .os-panel { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .os-panel.active { display:flex; }
+  .os-result-row {
+    display:flex; align-items:center; gap:10px; padding:7px 14px;
+    border-bottom:1px solid rgba(48,54,61,.4); cursor:pointer; transition:background .1s;
+  }
+  .os-result-row:hover { background:rgba(56,139,253,.07); }
+  .os-res-main { font-size:11px; font-weight:700; color:var(--text); flex:1; }
+  .os-res-sub  { font-size:10px; color:var(--muted); flex:2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .os-res-card { font-size:10px; color:var(--blue); flex-shrink:0; white-space:nowrap; }
+
   /* ── MODAL OUTIL DE RECHERCHE ── */
   #search-modal {
     display:none; position:fixed; inset:0; z-index:9999;
@@ -1536,6 +1590,19 @@
     </div>
   </div>
 
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('outils')">Outils ▾</button>
+    <div class="menu-dropdown" id="dd-outils">
+      <div class="menu-dd-label">Ressources</div>
+      <button class="menu-dd-item" onclick="menuAction('cmd-ressources')"><span class="mdi">🖥</span> Ligne de commandes ressources</button>
+      <button class="menu-dd-item" onclick="menuAction('personnel-list')"><span class="mdi">👥</span> Liste du personnel</button>
+      <div class="menu-dd-sep"></div>
+      <div class="menu-dd-label">Aide &amp; Recherche</div>
+      <button class="menu-dd-item" onclick="menuAction('guide-response')"><span class="mdi">📋</span> Guide de réponse</button>
+      <button class="menu-dd-item" onclick="menuAction('search-outils')"><span class="mdi">🔍</span> Outil de recherche</button>
+    </div>
+  </div>
+
   <div class="menu-item" id="menu-config" style="display:none">
     <button class="menu-btn" onclick="toggleMenu('config')" style="color:var(--p3)">⚙ Configuration ▾</button>
     <div class="menu-dropdown" id="dd-config">
@@ -2346,6 +2413,81 @@
       <button class="btn btn-dispatch" id="dup-confirm-btn" onclick="confirmDuplicate()" disabled>🗐 Créer la copie</button>
       <button class="btn btn-transfer" onclick="closeDupModal()">✕ Annuler</button>
       <span class="dup-dest-hint" id="dup-dest-hint">Sélectionnez un service destinataire</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL LISTE DU PERSONNEL ── -->
+<div id="personnel-modal" onclick="if(event.target===this)closePersonnelModal()">
+  <div id="personnel-box">
+    <div class="srch-hdr">
+      <span class="srch-hdr-icon">👥</span>
+      <div>
+        <div class="srch-hdr-title">Liste du personnel — Opérateurs RAO</div>
+      </div>
+      <button class="btn btn-sm" onclick="closePersonnelModal()">✕ Fermer</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <table class="pers-table">
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody id="personnel-tbody"></tbody>
+      </table>
+    </div>
+    <div class="srch-ftr">
+      <span class="srch-ftr-hint" id="personnel-count">— opérateur(s)</span>
+      <button class="login-cancel" onclick="closePersonnelModal()">✕ Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL OUTIL DE RECHERCHE MULTI-ONGLETS ── -->
+<div id="outils-search-modal" onclick="if(event.target===this)closeOutilsSearch()">
+  <div id="outils-search-box">
+    <div class="srch-hdr">
+      <span class="srch-hdr-icon">🔍</span>
+      <div>
+        <div class="srch-hdr-title">Outil de recherche — Personnes · Véhicules · Adresses</div>
+      </div>
+      <button class="btn btn-sm" onclick="closeOutilsSearch()">✕ Fermer</button>
+    </div>
+    <!-- Barre de recherche -->
+    <div class="srch-toolbar">
+      <div class="srch-input-wrap">
+        <input id="os-inp" class="srch-inp" type="text"
+          placeholder="Rechercher…"
+          oninput="runOutilsSearch()"
+          onkeydown="if(event.key==='Escape')closeOutilsSearch()">
+        <button class="srch-inp-clear" onclick="document.getElementById('os-inp').value='';runOutilsSearch()" title="Effacer">✕</button>
+      </div>
+      <span class="srch-count" id="os-count">—</span>
+    </div>
+    <!-- Onglets -->
+    <div class="os-tab-bar">
+      <button class="os-tab-btn active" id="os-tb-personnes"  onclick="switchOsTab('personnes')"> 👤 Personnes</button>
+      <button class="os-tab-btn"        id="os-tb-vehicules"  onclick="switchOsTab('vehicules')"> 🚗 Véhicules</button>
+      <button class="os-tab-btn"        id="os-tb-adresses"   onclick="switchOsTab('adresses')">  📍 Adresses</button>
+    </div>
+    <!-- Panneaux -->
+    <div class="os-panel active" id="os-panel-personnes">
+      <div class="panel-body" style="padding:0"><div id="os-body-personnes" class="srch-body"></div></div>
+    </div>
+    <div class="os-panel" id="os-panel-vehicules">
+      <div class="panel-body" style="padding:0"><div id="os-body-vehicules" class="srch-body"></div></div>
+    </div>
+    <div class="os-panel" id="os-panel-adresses">
+      <div class="panel-body" style="padding:0"><div id="os-body-adresses" class="srch-body"></div></div>
+    </div>
+    <div class="srch-ftr">
+      <span class="srch-ftr-hint">Cliquez sur une ligne pour ouvrir la carte · <kbd style="background:var(--border);padding:1px 5px;font-size:9px">Échap</kbd> pour fermer</span>
+      <button class="login-cancel" onclick="closeOutilsSearch()">✕ Fermer</button>
     </div>
   </div>
 </div>
@@ -5904,7 +6046,204 @@ function menuAction(action) {
     case 'user-mgmt':
       openUserMgmt();
       break;
+    case 'cmd-ressources':
+      showToast('🖥 Ligne de commandes ressources — fonctionnalité à venir');
+      break;
+    case 'personnel-list':
+      openPersonnelModal();
+      break;
+    case 'guide-response':
+      openGuideFromMenu();
+      break;
+    case 'search-outils':
+      openOutilsSearch();
+      break;
   }
+}
+
+// ── LISTE DU PERSONNEL ─────────────────────────────────────────────────
+function openPersonnelModal() {
+  const roleLabel = { admin:'ADMIN', superviseur:'SUPERVISEUR', operateur:'OPÉRATEUR', auditeur:'AUDITEUR' };
+  const roleColor = { admin:'var(--p1)', superviseur:'var(--p3)', operateur:'var(--blue)', auditeur:'var(--muted)' };
+
+  const tbody = document.getElementById('personnel-tbody');
+  const count = document.getElementById('personnel-count');
+  if (!tbody) return;
+
+  if (!OPERATORS.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-style:italic">Aucun opérateur enregistré</td></tr>`;
+    if (count) count.textContent = '0 opérateur(s)';
+  } else {
+    tbody.innerHTML = OPERATORS.map(op => {
+      const rCol = roleColor[op.role] || 'var(--muted)';
+      const rLbl = roleLabel[op.role] || (op.role||'').toUpperCase();
+      const actif = op.id === _currentOperator?.id;
+      return `<tr style="${actif ? 'background:rgba(56,139,253,.08)' : ''}">
+        <td style="font-weight:700;color:var(--blue);letter-spacing:1px">${escHtml(op.matricule||'—')}</td>
+        <td style="font-weight:700">${escHtml(op.nom||'—')}</td>
+        <td>${escHtml(op.prenom||'—')}</td>
+        <td><span class="pers-role-badge" style="color:${rCol};border-color:${rCol}">${rLbl}</span></td>
+        <td style="font-size:10px;color:${actif?'var(--p4)':'var(--muted)'}">${actif?'● EN LIGNE':'○ Hors ligne'}</td>
+      </tr>`;
+    }).join('');
+    if (count) count.textContent = `${OPERATORS.length} opérateur${OPERATORS.length>1?'s':''}`;
+  }
+  document.getElementById('personnel-modal').classList.add('open');
+}
+
+function closePersonnelModal() {
+  document.getElementById('personnel-modal').classList.remove('open');
+}
+
+// ── GUIDE DE RÉPONSE (depuis menu) ────────────────────────────────────
+function openGuideFromMenu() {
+  // Basculer sur l'écran 2 si nécessaire
+  if (currentScreen !== 2) switchScreen(2);
+
+  const grid = document.getElementById('cf-questions-grid');
+  // Si des questions sont déjà chargées, ouvrir le tiroir directement
+  if (grid && grid.children.length > 0) {
+    openGuideDrawer();
+    return;
+  }
+  // Sinon, afficher un message d'intro dans le tiroir
+  const natLabel = document.getElementById('guide-drawer-nature');
+  if (natLabel) natLabel.textContent = 'Sélectionnez une nature d\'événement pour afficher les questions';
+  if (grid) grid.innerHTML = `
+    <div style="grid-column:1/-1;padding:20px 14px;text-align:center;color:var(--muted);font-size:11px;line-height:1.8">
+      📋 Le guide questions s'affiche automatiquement<br>
+      lorsqu'une <strong style="color:var(--text)">nature d'événement</strong> est sélectionnée<br>
+      dans la carte d'appel en traitement.
+    </div>`;
+  const btn = document.getElementById('guide-toggle-btn');
+  if (btn) btn.style.display = '';
+  openGuideDrawer();
+}
+
+// ── OUTIL DE RECHERCHE MULTI-ONGLETS ──────────────────────────────────
+let _osActiveTab = 'personnes';
+
+function openOutilsSearch(tab) {
+  _osActiveTab = tab || 'personnes';
+  switchOsTab(_osActiveTab);
+  document.getElementById('os-inp').value = '';
+  runOutilsSearch();
+  document.getElementById('outils-search-modal').classList.add('open');
+  setTimeout(() => document.getElementById('os-inp').focus(), 60);
+}
+
+function closeOutilsSearch() {
+  document.getElementById('outils-search-modal').classList.remove('open');
+}
+
+function switchOsTab(tab) {
+  _osActiveTab = tab;
+  ['personnes','vehicules','adresses'].forEach(t => {
+    document.getElementById(`os-tb-${t}`)?.classList.toggle('active', t === tab);
+    document.getElementById(`os-panel-${t}`)?.classList.toggle('active', t === tab);
+  });
+  runOutilsSearch();
+}
+
+function runOutilsSearch() {
+  const q = (document.getElementById('os-inp')?.value || '').trim().toUpperCase();
+  const countEl = document.getElementById('os-count');
+
+  if (_osActiveTab === 'personnes')  _osSearchPersonnes(q, countEl);
+  else if (_osActiveTab === 'vehicules') _osSearchVehicules(q, countEl);
+  else if (_osActiveTab === 'adresses')  _osSearchAdresses(q, countEl);
+}
+
+function _osSearchPersonnes(q, countEl) {
+  const body = document.getElementById('os-body-personnes');
+  if (!body) return;
+  const results = [];
+  CARDS.forEach(card => {
+    (card.personnesImpliquees || []).forEach(p => {
+      const full = `${p.nom} ${p.prenom}`.toUpperCase();
+      const tel  = (p.tel||'').toUpperCase();
+      if (!q || full.includes(q) || tel.includes(q) || (p.statut||'').toUpperCase().includes(q)) {
+        results.push({ p, card });
+      }
+    });
+  });
+  if (countEl) countEl.textContent = `${results.length} résultat${results.length!==1?'s':''}`;
+  if (!results.length) { body.innerHTML = `<div class="srch-empty">${q?'Aucun résultat':'Entrez un nom ou numéro pour rechercher'}</div>`; return; }
+
+  body.innerHTML = results.map(({p, card}) => `
+    <div class="os-result-row" onclick="openCardOnScreen2('${card.id}');closeOutilsSearch()">
+      <span style="font-size:15px">👤</span>
+      <span class="os-res-main">${escHtml(p.nom)}, ${escHtml(p.prenom)}</span>
+      <span class="os-res-sub">${escHtml(p.statut||'—')} · DDN ${escHtml(p.ddn||'—')} · ☎ ${escHtml(p.tel||'—')}</span>
+      <span class="os-res-card">${escHtml(card.id)}</span>
+    </div>`).join('');
+}
+
+function _osSearchVehicules(q, countEl) {
+  const body = document.getElementById('os-body-vehicules');
+  if (!body) return;
+  const results = [];
+  // Véhicules impliqués dans les cartes
+  CARDS.forEach(card => {
+    (card.vehiculesImpliques || []).forEach(v => {
+      const str = `${v.plaque} ${v.marque} ${v.couleur} ${v.annee}`.toUpperCase();
+      if (!q || str.includes(q) || (v.statut||'').toUpperCase().includes(q)) {
+        results.push({ v, card, type:'impliqué' });
+      }
+    });
+  });
+  // Unités d'urgence
+  VEHICLES.forEach(veh => {
+    const str = `${veh.id} ${veh.typeName} ${veh.crew}`.toUpperCase();
+    if (!q || str.includes(q) || veh.statusKey.toUpperCase().includes(q)) {
+      results.push({ veh, type:'unité' });
+    }
+  });
+
+  if (countEl) countEl.textContent = `${results.length} résultat${results.length!==1?'s':''}`;
+  if (!results.length) { body.innerHTML = `<div class="srch-empty">${q?'Aucun résultat':'Entrez une plaque, marque ou unité pour rechercher'}</div>`; return; }
+
+  body.innerHTML = results.map(r => {
+    if (r.type === 'impliqué') {
+      return `<div class="os-result-row" onclick="openCardOnScreen2('${r.card.id}');closeOutilsSearch()">
+        <span style="font-size:15px">🚗</span>
+        <span class="os-res-main">${escHtml(r.v.plaque)} — ${escHtml(r.v.marque)} ${escHtml(r.v.couleur)} ${r.v.annee}</span>
+        <span class="os-res-sub">${escHtml(r.v.role||'—')} · ${escHtml(r.v.statut||'—')}</span>
+        <span class="os-res-card">${escHtml(r.card.id)}</span>
+      </div>`;
+    } else {
+      const veh = r.veh;
+      return `<div class="os-result-row" onclick="closeOutilsSearch();switchScreen(3)">
+        <span style="font-size:15px">${veh.type}</span>
+        <span class="os-res-main">${escHtml(veh.id)} — ${escHtml(veh.typeName)}</span>
+        <span class="os-res-sub">${escHtml(veh.crew)} · ${escHtml(veh.loc)}</span>
+        <span class="os-res-card" style="color:var(--muted)">${escHtml(veh.status)}</span>
+      </div>`;
+    }
+  }).join('');
+}
+
+function _osSearchAdresses(q, countEl) {
+  const body = document.getElementById('os-body-adresses');
+  if (!body) return;
+  const results = [];
+  CARDS.forEach(card => {
+    const addr = (card.fullAddr || card.address || '').toUpperCase();
+    if (!q || addr.includes(q) || card.id.includes(q)) {
+      results.push(card);
+    }
+  });
+
+  if (countEl) countEl.textContent = `${results.length} résultat${results.length!==1?'s':''}`;
+  if (!results.length) { body.innerHTML = `<div class="srch-empty">${q?'Aucun résultat':'Entrez une adresse pour rechercher'}</div>`; return; }
+
+  body.innerHTML = results.map(card => `
+    <div class="os-result-row" onclick="openCardOnScreen2('${card.id}');closeOutilsSearch()">
+      <span style="font-size:15px">📍</span>
+      <span class="os-res-main">${escHtml(card.fullAddr || card.address)}</span>
+      <span class="os-res-sub">${escHtml(card.typeIcon||'')} ${escHtml(card.typeKey)} · ${escHtml(card.subtype||'—')}</span>
+      <span class="os-res-card">${escHtml(card.id)}</span>
+    </div>`).join('');
 }
 
 // ── COMBOBOX NATURE D'ÉVÉNEMENT ───────────────────────────────────────
