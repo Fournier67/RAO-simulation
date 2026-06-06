@@ -798,6 +798,7 @@
   .unit-chip.uc-redaction  { background:rgba(188,140,255,.12); border-color:#bc8cff;      color:#bc8cff; }
   .unit-chip.uc-enquete    { background:rgba(210,168,255,.1);  border-color:#d2a8ff;      color:#d2a8ff; }
   .unit-chip.uc-horsservice{ background:rgba(248,81,73,.1);    border-color:var(--p1);    color:var(--p1); }
+  .unit-chip.uc-fin        { background:rgba(139,148,158,.12); border-color:var(--muted); color:var(--muted); }
   .unit-chip.uc-default    { background:rgba(56,139,253,.12);  border-color:var(--blue);  color:var(--blue); }
   .unit-chip:hover { filter: brightness(1.15); }
   .unit-chip .uc-arrow { font-size:9px; opacity:.7; }
@@ -1224,6 +1225,7 @@
   .vs-redaction   { color: #bc8cff; }
   .vs-enquete     { color: #d2a8ff; }
   .vs-horsservice { color: var(--p1); }
+  .vs-fin         { color: var(--muted); }
 
   /* ── LAYOUT VÉHICULES (table active + section hs) ── */
   #veh-panel-body   { overflow:hidden !important; display:flex; flex-direction:column; }
@@ -1310,6 +1312,7 @@
   .veh-status-sel.vs-redaction   { color:#bc8cff;     border-bottom-color:#bc8cff;     }
   .veh-status-sel.vs-enquete     { color:#d2a8ff;     border-bottom-color:#d2a8ff;     }
   .veh-status-sel.vs-horsservice { color:var(--p1);   border-bottom-color:var(--p1);   }
+  .veh-status-sel.vs-fin         { color:var(--muted); border-bottom-color:var(--muted); }
   .veh-status-sel option         { background:var(--panel); color:var(--text); }
 
   /* ── ÉQUIPAGE INLINE EDIT ── */
@@ -3209,7 +3212,7 @@ function renderVehiclesTable(){
     disponible:'vs-disponible', enservice:'vs-enservice',
     enroute:'vs-enroute', dispatche:'vs-dispatche',
     scene:'vs-scene', redaction:'vs-redaction', enquete:'vs-enquete',
-    horsservice:'vs-horsservice'
+    horsservice:'vs-horsservice', fin:'vs-fin'
   };
   const statusLabel = {
     disponible:'DISPONIBLE', enservice:'EN SERVICE',
@@ -3243,6 +3246,7 @@ function renderVehiclesTable(){
           <option value="redaction"   ${v.statusKey==='redaction'   ? 'selected':''}>● RÉDACTION</option>
           <option value="enquete"     ${v.statusKey==='enquete'     ? 'selected':''}>● ENQUÊTE</option>
           <option value="horsservice" ${v.statusKey==='horsservice' ? 'selected':''}>● HORS SERVICE</option>
+          <option value="fin"         ${v.statusKey==='fin'         ? 'selected':''}>● FIN DE SERVICE</option>
         </select>
       </td>
       <td style="color:var(--muted);font-size:11px">${v.loc}</td>
@@ -3266,7 +3270,7 @@ const VEH_STATUS_LABELS = {
   disponible:'DISPONIBLE', enservice:'EN SERVICE',
   enroute:'EN ROUTE', dispatche:'RÉPARTI',
   scene:'AU LIEU', redaction:'RÉDACTION', enquete:'ENQUÊTE',
-  horsservice:'HORS SERVICE'
+  horsservice:'HORS SERVICE', fin:'FIN DE SERVICE'
 };
 
 // ── PROPAGATION STATUT VÉHICULE → CARTE ───────────────────────────────
@@ -3887,6 +3891,7 @@ const _CSM_STATUTS = [
   { key:'redaction',   label:'RÉDACTION',    dot:'🟣' },
   { key:'enquete',     label:'ENQUÊTE',      dot:'🟣' },
   { key:'horsservice', label:'HORS SERVICE', dot:'🔴' },
+  { key:'fin',         label:'FIN DE SERVICE', dot:'⚪' },
 ];
 let _csmVehId = null;
 
