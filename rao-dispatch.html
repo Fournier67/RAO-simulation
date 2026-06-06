@@ -6556,10 +6556,13 @@ function loadFromStorage() {
       savedCards.forEach(c => CARDS.push(c));
     }
     // ── Opérateurs ────────────────────────────────────────────────────
+    // On fusionne sans effacer : les entrées codées en dur priment toujours,
+    // les opérateurs ajoutés dynamiquement sont restaurés depuis le localStorage.
     const savedOps = JSON.parse(localStorage.getItem(LS_OPERATORS) || 'null');
     if (savedOps && typeof savedOps === 'object') {
-      Object.keys(OPERATORS).forEach(k => delete OPERATORS[k]);
-      Object.assign(OPERATORS, savedOps);
+      Object.entries(savedOps).forEach(([k, v]) => {
+        if (!OPERATORS[k]) OPERATORS[k] = v; // restaure uniquement les entrées dynamiques
+      });
     }
     // ── État des véhicules ────────────────────────────────────────────
     const savedVeh = JSON.parse(localStorage.getItem(LS_VEH_STATE) || 'null');
