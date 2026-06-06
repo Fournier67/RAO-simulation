@@ -784,10 +784,44 @@
 
   .units-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .unit-chip {
-    background: rgba(56,139,253,.15); border: 1px solid var(--blue);
-    color: var(--blue); font-size: 11px; padding: 2px 8px; letter-spacing: 1px; cursor: pointer;
+    font-size: 11px; padding: 3px 9px; letter-spacing: .5px; cursor: pointer;
+    border: 1px solid; font-family: var(--font); font-weight: 700;
+    transition: background .12s; display:inline-flex; align-items:center; gap:5px;
+    user-select:none;
   }
-  .unit-chip:hover { background: rgba(56,139,253,.3); }
+  /* Couleurs par statut */
+  .unit-chip.uc-dispatche  { background:rgba(56,139,253,.15);  border-color:var(--blue);  color:var(--blue); }
+  .unit-chip.uc-enroute    { background:rgba(121,192,255,.12); border-color:#79c0ff;      color:#79c0ff; }
+  .unit-chip.uc-scene      { background:rgba(63,185,80,.15);   border-color:var(--p4);    color:var(--p4); }
+  .unit-chip.uc-disponible { background:rgba(63,185,80,.1);    border-color:var(--p4);    color:var(--p4); }
+  .unit-chip.uc-enservice  { background:rgba(210,153,34,.12);  border-color:var(--p3);    color:var(--p3); }
+  .unit-chip.uc-redaction  { background:rgba(188,140,255,.12); border-color:#bc8cff;      color:#bc8cff; }
+  .unit-chip.uc-enquete    { background:rgba(210,168,255,.1);  border-color:#d2a8ff;      color:#d2a8ff; }
+  .unit-chip.uc-horsservice{ background:rgba(248,81,73,.1);    border-color:var(--p1);    color:var(--p1); }
+  .unit-chip.uc-default    { background:rgba(56,139,253,.12);  border-color:var(--blue);  color:var(--blue); }
+  .unit-chip:hover { filter: brightness(1.15); }
+  .unit-chip .uc-arrow { font-size:9px; opacity:.7; }
+
+  /* Menu statut flottant */
+  #chip-status-menu {
+    display:none; position:fixed; z-index:9500;
+    background:var(--panel); border:1px solid var(--border);
+    box-shadow:0 6px 24px rgba(0,0,0,.55); min-width:170px; padding:4px 0;
+  }
+  #chip-status-menu.open { display:block; }
+  #chip-status-menu .csm-title {
+    font-size:9px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase;
+    padding:5px 12px 3px; border-bottom:1px solid var(--border); margin-bottom:3px;
+  }
+  .csm-item {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 13px; font-family:var(--font); font-size:11px; font-weight:700;
+    letter-spacing:.5px; cursor:pointer; width:100%;
+    background:none; border:none; text-align:left; transition:background .1s;
+  }
+  .csm-item:hover { background:rgba(56,139,253,.1); }
+  .csm-item.csm-current { color:var(--blue); }
+  .csm-item .csm-dot { font-size:8px; }
 
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
   .btn {
@@ -2417,6 +2451,12 @@
   </div>
 </div>
 
+<!-- ── MENU STATUT VÉHICULE (chips carte) ── -->
+<div id="chip-status-menu">
+  <div class="csm-title" id="csm-title">— unité</div>
+  <!-- items générés dynamiquement -->
+</div>
+
 <!-- ── MODAL LISTE DU PERSONNEL ── -->
 <div id="personnel-modal" onclick="if(event.target===this)closePersonnelModal()">
   <div id="personnel-box">
@@ -3067,7 +3107,18 @@ function loadCard(cardId){
 
   const unitsEl = document.getElementById('cf-units');
   unitsEl.innerHTML = card.assignedUnits.length
-    ? card.assignedUnits.map(u=>`<span class="unit-chip">${u}</span>`).join('')
+    ? card.assignedUnits.map(u => {
+        const vid = u.trim().split(' ').pop();
+        const veh = VEHICLES.find(v => v.id === vid);
+        const sk  = veh ? veh.statusKey : 'default';
+        const lbl = veh ? (VEH_STATUS_LABELS[sk] || sk.toUpperCase()) : '';
+        return `<span class="unit-chip uc-${sk}"
+          onclick="openChipStatusMenu('${vid}', event)"
+          title="Changer le statut de ${vid}">
+          ${u} <span class="uc-arrow">▾</span>
+          ${lbl ? `<span style="font-size:9px;opacity:.75;font-weight:400">· ${lbl}</span>` : ''}
+        </span>`;
+      }).join('')
     : '<span style="color:var(--muted);font-size:11px">Aucune unité assignée</span>';
 
   renderAllTabs(card);
@@ -3825,6 +3876,90 @@ function confirmRepartir() {
   closeRepartirModal();
   showToast(`⚡ ${count} unité${count > 1 ? 's' : ''} répartie${count > 1 ? 's' : ''} — ${card.id}`);
 }
+
+// ── MENU STATUT SUR CHIP ───────────────────────────────────────────────
+const _CSM_STATUTS = [
+  { key:'disponible',  label:'DISPONIBLE',   dot:'🟢' },
+  { key:'enservice',   label:'EN SERVICE',   dot:'🟡' },
+  { key:'enroute',     label:'EN ROUTE',     dot:'🔵' },
+  { key:'dispatche',   label:'RÉPARTI',      dot:'🟢' },
+  { key:'scene',       label:'AU LIEU',      dot:'🟢' },
+  { key:'redaction',   label:'RÉDACTION',    dot:'🟣' },
+  { key:'enquete',     label:'ENQUÊTE',      dot:'🟣' },
+  { key:'horsservice', label:'HORS SERVICE', dot:'🔴' },
+];
+let _csmVehId = null;
+
+function openChipStatusMenu(vehId, evt) {
+  evt.stopPropagation();
+  _csmVehId = vehId;
+  const veh  = VEHICLES.find(v => v.id === vehId);
+  const menu = document.getElementById('chip-status-menu');
+  const title= document.getElementById('csm-title');
+  if (!menu || !veh) return;
+
+  if (title) title.textContent = `${veh.type} ${vehId} — ${veh.typeName}`;
+
+  // Générer les options
+  const items = _CSM_STATUTS.map(s => `
+    <button class="csm-item ${veh.statusKey === s.key ? 'csm-current' : ''}"
+      onclick="selectChipStatus('${vehId}','${s.key}')">
+      <span class="csm-dot">${s.dot}</span> ${s.label}
+      ${veh.statusKey === s.key ? ' ✓' : ''}
+    </button>`).join('');
+
+  // Remplacer le contenu après le titre
+  const existing = menu.querySelectorAll('.csm-item');
+  existing.forEach(el => el.remove());
+  menu.insertAdjacentHTML('beforeend', items);
+
+  // Positionner
+  const chip = evt.currentTarget;
+  const rect = chip.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+  // Garder dans l'écran
+  menu.classList.add('open');
+  const mr = menu.getBoundingClientRect();
+  if (mr.right > window.innerWidth - 8)
+    menu.style.left = (window.innerWidth - mr.width - 8) + 'px';
+}
+
+function selectChipStatus(vehId, statusKey) {
+  closeChipStatusMenu();
+  updateVehStatus(vehId, statusKey);
+  // Re-rendre les chips de la carte courante
+  const card = CARDS.find(c => c.id === selectedCardId);
+  if (card) {
+    const unitsEl = document.getElementById('cf-units');
+    if (unitsEl) {
+      unitsEl.innerHTML = card.assignedUnits.map(u => {
+        const vid = u.trim().split(' ').pop();
+        const v   = VEHICLES.find(x => x.id === vid);
+        const sk  = v ? v.statusKey : 'default';
+        const lbl = v ? (VEH_STATUS_LABELS[sk] || sk.toUpperCase()) : '';
+        return `<span class="unit-chip uc-${sk}"
+          onclick="openChipStatusMenu('${vid}', event)"
+          title="Changer le statut de ${vid}">
+          ${u} <span class="uc-arrow">▾</span>
+          ${lbl ? `<span style="font-size:9px;opacity:.75;font-weight:400">· ${lbl}</span>` : ''}
+        </span>`;
+      }).join('');
+    }
+  }
+}
+
+function closeChipStatusMenu() {
+  const menu = document.getElementById('chip-status-menu');
+  if (menu) menu.classList.remove('open');
+  _csmVehId = null;
+}
+
+// Fermer le menu au clic extérieur
+document.addEventListener('click', e => {
+  if (!e.target.closest('#chip-status-menu') && !e.target.closest('.unit-chip'))
+    closeChipStatusMenu();
+});
 
 function assignUnit(unitId){
   const card = CARDS.find(c => c.id === selectedCardId);
