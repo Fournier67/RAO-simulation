@@ -2433,8 +2433,8 @@
           <tr>
             <th>Matricule</th>
             <th>Nom</th>
-            <th>Prénom</th>
             <th>Rôle</th>
+            <th>Poste</th>
             <th>Statut</th>
           </tr>
         </thead>
@@ -6063,30 +6063,37 @@ function menuAction(action) {
 
 // ── LISTE DU PERSONNEL ─────────────────────────────────────────────────
 function openPersonnelModal() {
-  const roleLabel = { admin:'ADMIN', superviseur:'SUPERVISEUR', operateur:'OPÉRATEUR', auditeur:'AUDITEUR' };
-  const roleColor = { admin:'var(--p1)', superviseur:'var(--p3)', operateur:'var(--blue)', auditeur:'var(--muted)' };
-
   const tbody = document.getElementById('personnel-tbody');
   const count = document.getElementById('personnel-count');
   if (!tbody) return;
 
-  if (!OPERATORS.length) {
+  // Couleur par rôle (texte libre)
+  function roleColor(role) {
+    const r = (role||'').toLowerCase();
+    if (r.includes('admin'))   return 'var(--p1)';
+    if (r.includes('superv'))  return 'var(--p3)';
+    if (r.includes('opérat'))  return 'var(--blue)';
+    return 'var(--muted)';
+  }
+
+  const entries = Object.entries(OPERATORS);   // [ [matricule, op], … ]
+
+  if (!entries.length) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-style:italic">Aucun opérateur enregistré</td></tr>`;
     if (count) count.textContent = '0 opérateur(s)';
   } else {
-    tbody.innerHTML = OPERATORS.map(op => {
-      const rCol = roleColor[op.role] || 'var(--muted)';
-      const rLbl = roleLabel[op.role] || (op.role||'').toUpperCase();
-      const actif = op.id === _currentOperator?.id;
+    tbody.innerHTML = entries.map(([matricule, op]) => {
+      const actif = _currentOperator?.matricule === matricule;
+      const col   = roleColor(op.role);
       return `<tr style="${actif ? 'background:rgba(56,139,253,.08)' : ''}">
-        <td style="font-weight:700;color:var(--blue);letter-spacing:1px">${escHtml(op.matricule||'—')}</td>
-        <td style="font-weight:700">${escHtml(op.nom||'—')}</td>
-        <td>${escHtml(op.prenom||'—')}</td>
-        <td><span class="pers-role-badge" style="color:${rCol};border-color:${rCol}">${rLbl}</span></td>
-        <td style="font-size:10px;color:${actif?'var(--p4)':'var(--muted)'}">${actif?'● EN LIGNE':'○ Hors ligne'}</td>
+        <td style="font-weight:700;color:var(--blue);letter-spacing:1px">${escHtml(matricule)}</td>
+        <td style="font-weight:700">${escHtml(op.nom || '—')}</td>
+        <td><span class="pers-role-badge" style="color:${col};border-color:${col}">${escHtml(op.role || '—')}</span></td>
+        <td style="font-size:10px;color:var(--muted)">${escHtml(op.poste || '—')}</td>
+        <td style="font-size:10px;color:${actif ? 'var(--p4)' : 'var(--muted)'}">${actif ? '● EN LIGNE' : '○ Hors ligne'}</td>
       </tr>`;
     }).join('');
-    if (count) count.textContent = `${OPERATORS.length} opérateur${OPERATORS.length>1?'s':''}`;
+    if (count) count.textContent = `${entries.length} opérateur${entries.length > 1 ? 's' : ''}`;
   }
   document.getElementById('personnel-modal').classList.add('open');
 }
