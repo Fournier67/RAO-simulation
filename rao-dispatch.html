@@ -3246,7 +3246,7 @@ function renderVehiclesTable(){
           <option value="redaction"   ${v.statusKey==='redaction'   ? 'selected':''}>● RÉDACTION</option>
           <option value="enquete"     ${v.statusKey==='enquete'     ? 'selected':''}>● ENQUÊTE</option>
           <option value="horsservice" ${v.statusKey==='horsservice' ? 'selected':''}>● HORS SERVICE</option>
-          <option value="fin"         ${v.statusKey==='fin'         ? 'selected':''}>● FIN DE SERVICE</option>
+          <option value="fin"         ${v.statusKey==='fin'         ? 'selected':''}>● FIN → DISPONIBLE</option>
         </select>
       </td>
       <td style="color:var(--muted);font-size:11px">${v.loc}</td>
@@ -3270,7 +3270,7 @@ const VEH_STATUS_LABELS = {
   disponible:'DISPONIBLE', enservice:'EN SERVICE',
   enroute:'EN ROUTE', dispatche:'RÉPARTI',
   scene:'AU LIEU', redaction:'RÉDACTION', enquete:'ENQUÊTE',
-  horsservice:'HORS SERVICE', fin:'FIN DE SERVICE'
+  horsservice:'HORS SERVICE', fin:'FIN'
 };
 
 // ── PROPAGATION STATUT VÉHICULE → CARTE ───────────────────────────────
@@ -3284,6 +3284,8 @@ const _VEH_TO_CARD = { dispatche:'dispatche', enroute:'dispatche', scene:'scene'
 function updateVehStatus(vehId, statusKey) {
   const veh = VEHICLES.find(v => v.id === vehId);
   if (!veh) return;
+  // "FIN" = transition automatique vers DISPONIBLE
+  if (statusKey === 'fin') statusKey = 'disponible';
   veh.statusKey = statusKey;
   veh.status    = VEH_STATUS_LABELS[statusKey] || statusKey.toUpperCase();
 
@@ -3891,7 +3893,7 @@ const _CSM_STATUTS = [
   { key:'redaction',   label:'RÉDACTION',    dot:'🟣' },
   { key:'enquete',     label:'ENQUÊTE',      dot:'🟣' },
   { key:'horsservice', label:'HORS SERVICE', dot:'🔴' },
-  { key:'fin',         label:'FIN DE SERVICE', dot:'⚪' },
+  { key:'fin',         label:'FIN → DISPONIBLE', dot:'⚪' },
 ];
 let _csmVehId = null;
 
